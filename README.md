@@ -1,2 +1,4 @@
-# ssatr-lab-ia-hepesbogdan
-Repository pentru laboratorul SSATR - 2025
+# Laborator SSATR - Hepes Bogdan
+
+## Despre
+Repository pentru lucrarile de laborator din cadrul cursului Structuri Software pentru Aplicații de Timp Real.
