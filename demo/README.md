@@ -167,7 +167,7 @@ Baza de date utilizată este relațională (PostgreSQL) și conține tabelele pr
 1. **Clone the repository**
 ```bash
    git clone https://github.com/bogdanhepes/ssatr-lab-ia-hepesbogdan
-   cd [project-directory]
+   cd demo
 ```
 
 2. **Start infrastructure services**
