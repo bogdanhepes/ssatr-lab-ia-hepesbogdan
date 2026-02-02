@@ -1,0 +1,34 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36" version="29.3.6">
+  <diagram name="Page-1" id="4RIplfMqHAfIg_p8LA-t">
+    <mxGraphModel dx="2066" dy="1103" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="MNAb3HSRhXBuTACUgpqw-31" parent="1" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" value="sessions" vertex="1">
+          <mxGeometry height="200" width="160" x="90" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="MNAb3HSRhXBuTACUgpqw-32" parent="MNAb3HSRhXBuTACUgpqw-31" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;spacingRight=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;whiteSpace=wrap;" value="id (PK)&lt;br&gt;title&lt;br&gt;token (unique)&lt;br&gt;start_time&lt;br&gt;end_time&lt;br&gt;expected_participants&lt;br&gt;questions_text&lt;br&gt;template_name" vertex="1">
+          <mxGeometry height="150" width="160" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="MNAb3HSRhXBuTACUgpqw-33" parent="1" style="swimlane;childLayout=stackLayout;horizontal=1;startSize=50;horizontalStack=0;rounded=1;fontSize=14;fontStyle=0;strokeWidth=2;resizeParent=0;resizeLast=1;shadow=0;dashed=0;align=center;arcSize=4;whiteSpace=wrap;html=1;" value="feedback responses" vertex="1">
+          <mxGeometry height="220" width="180" x="590" y="220" as="geometry" />
+        </mxCell>
+        <mxCell id="MNAb3HSRhXBuTACUgpqw-34" parent="MNAb3HSRhXBuTACUgpqw-33" style="align=left;strokeColor=none;fillColor=none;spacingLeft=4;spacingRight=4;fontSize=12;verticalAlign=top;resizable=0;rotatable=0;part=1;html=1;whiteSpace=wrap;" value="id (PK) &lt;br&gt;session_id (FK → sessions.id) &lt;br&gt;rating &lt;br&gt;comment &lt;br&gt;sentiment &lt;br&gt;anonymous &lt;br&gt;participant_name &lt;br&gt;answers_text &lt;br&gt;created_at" vertex="1">
+          <mxGeometry height="170" width="180" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="MNAb3HSRhXBuTACUgpqw-37" edge="1" parent="1" style="endArrow=classic;html=1;rounded=0;exitX=-0.006;exitY=0.147;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.313;entryY=0.093;entryDx=0;entryDy=0;entryPerimeter=0;" target="MNAb3HSRhXBuTACUgpqw-32" value="">
+          <mxGeometry height="50" relative="1" width="50" as="geometry">
+            <mxPoint x="588.9200000000001" y="297.99" as="sourcePoint" />
+            <mxPoint x="246.96000000000004" y="293.95000000000005" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="MNAb3HSRhXBuTACUgpqw-38" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="1" vertex="1">
+          <mxGeometry height="30" width="60" x="240" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="MNAb3HSRhXBuTACUgpqw-39" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="N" vertex="1">
+          <mxGeometry height="30" width="60" x="540" y="270" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8" />
+    <title>Live Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; }
+        .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; max-width: 740px; }
+        .row { margin: 8px 0; }
+        .big { font-size: 22px; font-weight: bold; }
+        .muted { color: #666; }
+        ul { margin: 8px 0 0 18px; }
+        .pill { display:inline-block; border:1px solid #ddd; padding:3px 8px; border-radius:999px; margin: 4px 6px 0 0; }
+    </style>
+</head>
+<body>
+
+<h2>Live Dashboard</h2>
+
+<div class="card" style="margin-top: 16px;">
+    <div class="row"><span class="muted">Session token:</span> <span id="token"></span></div>
+
+    <div class="row big">Total responses: <span id="total">0</span></div>
+
+    <div class="row">✅ Positive: <span id="pos">0</span></div>
+    <div class="row">➖ Neutral: <span id="neu">0</span></div>
+    <div class="row">❌ Negative: <span id="neg">0</span></div>
+
+    <div class="row">Response rate: <span id="rate">0</span>%</div>
+
+    <div class="row" style="margin-top: 14px;">
+        <div class="muted">Participants:</div>
+        <div id="participants"></div>
+    </div>
+
+    <div class="row" style="margin-top: 14px;">
+        <div class="muted">Top words (simplified word cloud):</div>
+        <ul id="words"></ul>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script>
+    function getTokenFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("token");
+    }
+
+    const token = getTokenFromUrl();
+    document.getElementById("token").textContent = token || "(missing token)";
+
+    function renderTopWords(list) {
+      const ul = document.getElementById("words");
+      ul.innerHTML = "";
+      if (!list || list.length === 0) {
+        const li = document.createElement("li");
+        li.textContent = "(no words yet)";
+        ul.appendChild(li);
+        return;
+      }
+      list.forEach(wc => {
+        const li = document.createElement("li");
+        li.textContent = wc.word + " (" + wc.count + ")";
+        ul.appendChild(li);
+      });
+    }
+
+    function anonymousLabel(n) {
+      if (!n || n <= 0) return null;
+      if (n === 1) return "1 utilizator anonim";
+      return n + " utilizatori anonimi";
+    }
+
+    function renderParticipants(named, anonymousCount) {
+      const box = document.getElementById("participants");
+      box.innerHTML = "";
+
+      let hasAnything = false;
+
+      if (named && named.length > 0) {
+        hasAnything = true;
+        named.forEach(n => {
+          const span = document.createElement("span");
+          span.className = "pill";
+          span.textContent = n;
+          box.appendChild(span);
+        });
+      }
+
+      const anonText = anonymousLabel(anonymousCount);
+      if (anonText) {
+        hasAnything = true;
+        const span = document.createElement("span");
+        span.className = "pill";
+        span.textContent = anonText;
+        box.appendChild(span);
+      }
+
+      if (!hasAnything) {
+        box.textContent = "(no submissions yet)";
+      }
+    }
+
+    async function loadStats() {
+      if (!token) return;
+      const res = await fetch(`/api/sessions/${token}/stats`);
+      if (!res.ok) return;
+      const data = await res.json();
+
+      document.getElementById("total").textContent = data.totalResponses;
+      document.getElementById("pos").textContent = data.positive;
+      document.getElementById("neu").textContent = data.neutral;
+      document.getElementById("neg").textContent = data.negative;
+      document.getElementById("rate").textContent = (data.responseRatePercent || 0).toFixed(2);
+
+      renderTopWords(data.topWords);
+      renderParticipants(data.namedParticipants, data.anonymousCount);
+    }
+
+    // încărcare inițială
+    loadStats();
+
+    if (!token) {
+      alert("Lipsește token-ul. Folosește: /dashboard.html?token=TOKEN");
+    } else {
+      const socket = new SockJS("/ws");
+      const stompClient = Stomp.over(socket);
+      stompClient.debug = null;
+
+      stompClient.connect({}, function () {
+        const topic = "/topic/session/" + token;
+        stompClient.subscribe(topic, function () {
+          loadStats();
+        });
+      }, function (err) {
+        console.error("WebSocket connect error:", err);
+        alert("Nu s-a putut conecta la WebSocket (/ws).");
+      });
+    }
+</script>
+
+</body>
+</html>

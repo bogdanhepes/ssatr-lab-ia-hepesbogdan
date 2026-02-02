@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8" />
+    <title>Sessions Overview</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; }
+        .muted { color:#666; }
+        table { border-collapse: collapse; width: 100%; margin-top: 14px; }
+        th, td { border: 1px solid #ddd; padding: 10px; vertical-align: top; }
+        th { background: #f7f7f7; text-align: left; }
+        .pill { display:inline-block; border:1px solid #ddd; padding:3px 8px; border-radius:999px; margin: 4px 6px 0 0; }
+        .bar { height: 12px; background:#eee; border-radius: 999px; overflow:hidden; margin-top:6px; width: 180px; }
+        .fill { height:100%; width:0%; background:#999; }
+        .actions a { margin-right: 10px; }
+        input { padding: 8px; width: 360px; margin-top: 10px; }
+        button { padding: 9px 12px; cursor: pointer; margin-left: 6px; }
+    </style>
+</head>
+<body>
+
+<h2>Sessions Overview</h2>
+<div class="muted">Listă cu toate sesiunile existente + statistici. Datele vin din <code>/api/analytics/sessions</code>.</div>
+
+<div style="margin-top: 14px;">
+    <input id="filter" placeholder="Caută după titlu sau token..." oninput="renderFiltered()" />
+    <button onclick="load()">Refresh</button>
+</div>
+
+<table>
+    <thead>
+    <tr>
+        <th>Session</th>
+        <th>Stats</th>
+        <th>Participants</th>
+        <th>Links</th>
+    </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+</table>
+
+<script>
+    let allItems = [];
+
+    function pct(value, total) {
+      return total > 0 ? (value * 100 / total) : 0;
+    }
+
+    function setBar(el, value, total) {
+      el.style.width = pct(value, total).toFixed(1) + "%";
+    }
+
+    function anonLabel(n) {
+      if (!n || n <= 0) return null;
+      if (n === 1) return "1 utilizator anonim";
+      return n + " utilizatori anonimi";
+    }
+
+    function render(items) {
+      const tbody = document.getElementById("tbody");
+      tbody.innerHTML = "";
+
+      if (!items || items.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        td.textContent = "Nu există sesiuni (încă). Creează una din Postman / API.";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      items.forEach(it => {
+        const tr = document.createElement("tr");
+
+        // col 1: Session
+        const td1 = document.createElement("td");
+        td1.innerHTML = `
+          <div><b>${it.title || "(no title)"}</b></div>
+          <div class="muted">token: ${it.token}</div>
+          <div class="muted">id: ${it.id}</div>
+        `;
+        tr.appendChild(td1);
+
+        // col 2: Stats
+        const td2 = document.createElement("td");
+        td2.innerHTML = `
+          <div><b>Total:</b> ${it.totalResponses}</div>
+          <div><b>Response rate:</b> ${(it.responseRatePercent || 0).toFixed(2)}% (expected: ${it.expectedParticipants})</div>
+
+          <div style="margin-top:10px;"><b>Positive:</b> ${it.positive}</div>
+          <div class="bar"><div class="fill" id="p_${it.id}"></div></div>
+
+          <div style="margin-top:10px;"><b>Neutral:</b> ${it.neutral}</div>
+          <div class="bar"><div class="fill" id="n_${it.id}"></div></div>
+
+          <div style="margin-top:10px;"><b>Negative:</b> ${it.negative}</div>
+          <div class="bar"><div class="fill" id="g_${it.id}"></div></div>
+        `;
+        tr.appendChild(td2);
+
+        // col 3: Participants
+        const td3 = document.createElement("td");
+        const names = (it.namedParticipants || []).map(n => `<span class="pill">${n}</span>`).join("");
+        const anon = anonLabel(it.anonymousCount);
+        const anonPill = anon ? `<span class="pill">${anon}</span>` : "";
+        td3.innerHTML = names + anonPill || "(no submissions yet)";
+        tr.appendChild(td3);
+
+        // col 4: Links
+        const td4 = document.createElement("td");
+        td4.className = "actions";
+        const dashboard = `/dashboard.html?token=${encodeURIComponent(it.token)}`;
+        const feedback = `/feedback.html?token=${encodeURIComponent(it.token)}`;
+        const qr = `/api/sessions/${encodeURIComponent(it.token)}/qr`;
+        td4.innerHTML = `
+          <div><a href="${dashboard}" target="_blank">Dashboard</a></div>
+          <div><a href="${feedback}" target="_blank">Feedback form</a></div>
+          <div><a href="${qr}" target="_blank">QR (PNG)</a></div>
+        `;
+        tr.appendChild(td4);
+
+        tbody.appendChild(tr);
+
+        // set bars
+        setBar(document.getElementById(`p_${it.id}`), it.positive, it.totalResponses);
+        setBar(document.getElementById(`n_${it.id}`), it.neutral, it.totalResponses);
+        setBar(document.getElementById(`g_${it.id}`), it.negative, it.totalResponses);
+      });
+    }
+
+    function renderFiltered() {
+      const q = document.getElementById("filter").value.trim().toLowerCase();
+      if (!q) {
+        render(allItems);
+        return;
+      }
+      const filtered = allItems.filter(it =>
+        (it.title || "").toLowerCase().includes(q) ||
+        (it.token || "").toLowerCase().includes(q)
+      );
+      render(filtered);
+    }
+
+    async function load() {
+      try {
+        const res = await fetch("/api/analytics/sessions");
+        if (!res.ok) {
+          const t = await res.text();
+          alert("Eroare: " + t);
+          return;
+        }
+        allItems = await res.json();
+        renderFiltered();
+      } catch (e) {
+        console.error(e);
+        alert("Nu pot contacta serverul.");
+      }
+    }
+
+    load();
+</script>
+
+</body>
+</html>

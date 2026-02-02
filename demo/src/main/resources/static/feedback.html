@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8" />
+    <title>Feedback Form</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 24px; }
+        .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; max-width: 640px; }
+        label { display:block; margin-top: 12px; }
+        input, textarea, select { width: 100%; padding: 8px; margin-top: 6px; }
+        button { margin-top: 16px; padding: 10px 14px; cursor: pointer; }
+        .ok { color: green; margin-top: 12px; }
+        .err { color: red; margin-top: 12px; }
+        .muted { color: #666; }
+        .q { margin-top: 12px; padding-top: 12px; border-top: 1px dashed #ddd; }
+        .disabled { opacity: 0.6; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<h2>Feedback</h2>
+<div class="muted">Completează formularul și apasă “Trimite”.</div>
+
+<div class="card" id="card" style="margin-top: 16px;">
+    <div class="muted">Session token: <span id="token"></span></div>
+    <div class="muted">Titlu: <span id="title"></span></div>
+    <div class="muted">Status: <span id="status"></span></div>
+
+    <label>Rating (1-5)</label>
+    <select id="rating">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+    </select>
+
+    <label>Comentariu (opțional)</label>
+    <textarea id="comment" rows="3" placeholder="Scrie aici..."></textarea>
+
+    <label style="margin-top: 14px;">
+        <input type="checkbox" id="anonymous" checked />
+        Trimite anonim
+    </label>
+
+    <div id="nameBox" style="display:none;">
+        <label>Nume (obligatoriu dacă NU e anonim)</label>
+        <input id="participantName" placeholder="Numele tău" />
+    </div>
+
+    <div id="questionsArea"></div>
+
+    <button id="sendBtn" onclick="send()">Trimite</button>
+
+    <div id="msg"></div>
+</div>
+
+<script>
+    function getTokenFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("token");
+    }
+
+    const token = getTokenFromUrl();
+    document.getElementById("token").textContent = token || "(missing token)";
+
+    if (!token) {
+      alert("Lipsește token-ul. Folosește: /feedback.html?token=TOKEN");
+    }
+
+    const anonymousCb = document.getElementById("anonymous");
+    const nameBox = document.getElementById("nameBox");
+
+    anonymousCb.addEventListener("change", () => {
+      nameBox.style.display = anonymousCb.checked ? "none" : "block";
+    });
+
+    async function loadSession() {
+      if (!token) return;
+
+      const res = await fetch(`/api/sessions/${token}`);
+      if (!res.ok) {
+        document.getElementById("status").textContent = "Nu găsesc sesiunea.";
+        document.getElementById("card").classList.add("disabled");
+        return;
+      }
+
+      const data = await res.json();
+      document.getElementById("title").textContent = data.title || "";
+      document.getElementById("status").textContent = data.active ? "ACTIVE" : "INACTIVE (window closed/not started)";
+
+      if (!data.active) {
+        document.getElementById("msg").innerHTML = `<div class="err">❌ Feedback-ul nu poate fi trimis acum (în afara ferestrei).</div>`;
+        document.getElementById("card").classList.add("disabled");
+        return;
+      }
+
+      const qa = document.getElementById("questionsArea");
+      qa.innerHTML = "";
+
+      if (data.questions && data.questions.length > 0) {
+        const h = document.createElement("div");
+        h.className = "muted";
+        h.style.marginTop = "12px";
+        h.textContent = "Întrebări:";
+        qa.appendChild(h);
+
+        data.questions.forEach((q, idx) => {
+          const wrap = document.createElement("div");
+          wrap.className = "q";
+
+          const label = document.createElement("label");
+          label.textContent = (idx + 1) + ") " + q;
+          wrap.appendChild(label);
+
+          const input = document.createElement("input");
+          input.id = "answer_" + idx;
+          input.placeholder = "Răspunsul tău...";
+          wrap.appendChild(input);
+
+          qa.appendChild(wrap);
+        });
+      }
+    }
+
+    loadSession();
+
+    function resetForm() {
+      // reset rating
+      document.getElementById("rating").value = "3";
+
+      // reset comment
+      document.getElementById("comment").value = "";
+
+      // reset anonymous + hide name
+      anonymousCb.checked = true;
+      nameBox.style.display = "none";
+      document.getElementById("participantName").value = "";
+
+      // reset answers
+      const answerInputs = document.querySelectorAll("[id^='answer_']");
+      answerInputs.forEach(i => i.value = "");
+    }
+
+    async function send() {
+      if (!token) return;
+
+      const rating = parseInt(document.getElementById("rating").value, 10);
+      const comment = document.getElementById("comment").value;
+      const anonymous = document.getElementById("anonymous").checked;
+      const participantName = document.getElementById("participantName").value;
+
+      const answers = [];
+      const answerInputs = document.querySelectorAll("[id^='answer_']");
+      answerInputs.forEach(i => answers.push(i.value || ""));
+
+      const payload = { rating, comment, anonymous, participantName, answers };
+
+      try {
+        const res = await fetch(`/api/sessions/${token}/responses`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const text = await res.text();
+
+        if (res.ok) {
+          document.getElementById("msg").innerHTML = `<div class="ok">✅ Trimite cu succes!</div>`;
+          resetForm(); // ✅ reset complet după submit
+        } else {
+          document.getElementById("msg").innerHTML = `<div class="err">❌ Eroare: ${text}</div>`;
+        }
+      } catch (e) {
+        document.getElementById("msg").innerHTML = `<div class="err">❌ Nu pot contacta serverul.</div>`;
+        console.error(e);
+      }
+    }
+</script>
+
+</body>
+</html>
